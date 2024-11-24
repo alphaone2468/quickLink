@@ -12,15 +12,11 @@ const io = new Server(server,{
 
 });
 
-
 io.on("connection",(socket)=>{
     socket.on('join-room',(roomId)=>{
-        console.log(roomId);
         socket.join(roomId);
     })
-
     socket.on("send",({roomId,message})=>{
-        console.log(message);
         io.to(roomId).emit("receive",message);
     })
 })
