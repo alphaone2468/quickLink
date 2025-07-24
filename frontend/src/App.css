@@ -1,0 +1,168 @@
+*{
+  margin: 0px;
+  padding: 0px;
+  box-sizing: border-box;
+
+}
+/* Container & Wrapper */
+.container {
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.content{
+  min-height: calc(100vh - 110px);
+  background-color: #f4f4f4;
+}
+
+
+/* Header */
+.header {
+  margin-bottom: 18px;
+  margin-top: 10px;
+  padding: 0px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 2.5rem;
+  color: black;
+  background: rgb(131, 131, 222);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-family: "Lato", sans-serif;
+  font-weight: 800;
+
+}
+
+.subtitle {
+  color: black;
+  font-size: 1.125rem;
+  padding-left: 100px;
+}
+
+/* Join Card */
+.join-card {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 10px 20px -12px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  max-width: 1000px;
+  margin: 0px auto;
+  position: relative;
+  top: 50px;
+  background-color: white;
+}
+
+.join-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.join-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: black;
+  margin-bottom: 8px;
+}
+
+.join-subtitle {
+  color: black;
+}
+
+.input-container {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.input {
+  flex: 1;
+  min-width: 250px;
+  padding: 16px 20px;
+  font-size: 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: black;
+  transition: all 0.3s ease;
+  outline: none;
+  border: 1px solid grey;
+}
+
+.input:focus {
+  border:1px solid #60a5fa;
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.1);
+}
+
+.button {
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 12px;
+  border: none;
+  color: black;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+  color: white;
+  background-color: #3b82fe;
+}
+
+.button:hover {
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.5);
+}
+
+/* Editor Card */
+.editor-card {
+  border-radius: 20px;
+}
+
+.room-header {
+  margin-bottom: 24px;
+}
+
+.room-title {
+  font-size: 1.5rem;
+  color: black;
+  margin-bottom: 8px;
+}
+
+.room-id {
+  background: rgba(255, 255, 255, 0.1);
+  color: black;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.textarea {
+  width: 100%;
+  height: calc(100vh - 170px);
+  padding: 20px;
+  font-size: 16px;
+  color: black;
+  outline: none;
+  resize: vertical;
+  transition: all 0.3s ease;
+  line-height: 1.5;
+  background-color: #f2f3f3;
+  border: 0px;
+  font-family: 'Lato';
+}
+.leaveBtn{
+  background-color: rgb(236, 128, 128);
+  padding: 10px 30px;
+  border: 0px solid red;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+img{
+  position: relative;
+  top: 10px;
+}
