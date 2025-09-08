@@ -14,13 +14,13 @@ body{
 }
 
 .content {
-  min-height: calc(100vh - 80px);
+  min-height: calc(100vh - 60px);
   background-color: #f4f4f4;
 }
 
 .header {
-  margin-bottom: 6px;
-  margin-top: 6px;
+  margin-bottom: 12px;
+  margin-top: 12px;
   padding: 0px 40px;
   display: flex;
   justify-content: space-between;
@@ -44,7 +44,7 @@ body{
   padding-left: 60px;
 }
 
-/* Join Card */
+
 .join-card {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -170,9 +170,6 @@ body{
   background: rgba(255, 255, 255, 0.1);
   color: black;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 4px 8px;
-  border-radius: 4px;
-  margin-left: 8px;
   font-weight: bold;
 }
 
@@ -213,10 +210,8 @@ body{
 
 img {
   position: relative;
-  top: 10px;
 }
 
-/* Users Count */
 .users-count {
   display: flex;
   align-items: center;

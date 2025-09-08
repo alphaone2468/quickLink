@@ -1,68 +1,144 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import io from "socket.io-client";
 import './App.css'
 import logo from './photos/logo.png'
 
-const socket = io("http://localhost:5000");
+const socket = io("http://localhost:5000", {
+  transports: ['websocket'],
+  upgrade: true,
+  rememberUpgrade: true,
+  timeout: 5000,
+  forceNew: false
+});
 
 export default function App() {
   const [roomId, setRoomId] = useState("");
   const [joined, setJoined] = useState(false);
   const [text, setText] = useState("");
+  const [connectionStatus, setConnectionStatus] = useState("");
+  const [lastActivity, setLastActivity] = useState(null);
   const textAreaRef = useRef(null);
   const skipEmit = useRef(false);
   const [error, setError] = useState(false);
   const [usersInRoom, setUsersInRoom] = useState(0);
+  const [messageQueue, setMessageQueue] = useState([]);
+  const [isConnected, setIsConnected] = useState(false);
+  const debounceTimer = useRef(null);
+
+  const debouncedSend = useCallback((roomId, message) => {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+    
+    debounceTimer.current = setTimeout(() => {
+      if (isConnected) {
+        socket.emit("send", { 
+          roomId, 
+          message,
+        });
+      } else {
+        setMessageQueue(prev => [...prev, { roomId, message }]);
+      }
+    }, 50); 
+  }, [isConnected]);
 
   useEffect(() => {
-    socket.on("receive", (incomingText) => {
+    socket.on("connect", () => {
+      setIsConnected(true);
+      
+      if (messageQueue.length > 0) {
+        messageQueue.forEach(({ roomId, message }) => {
+          socket.emit("send", { roomId, message, timestamp: Date.now() });
+        });
+        setMessageQueue([]);
+      }
+    });
+
+
+    // Message handling
+    socket.on("receive", (messageData) => {
       skipEmit.current = true;
-      setText(incomingText);
+      if (typeof messageData === 'string') {
+        setText(messageData);
+      } else {
+        setText(messageData.message || messageData);
+      }
     });
 
     socket.on("room-users-count", (count) => {
       setUsersInRoom(count);
     });
 
+
+    const pingInterval = setInterval(() => {
+      if (isConnected) {
+        socket.emit('ping');
+      }
+    }, 30000);
+
+
     return () => {
+      clearInterval(pingInterval);
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.off("connect_error");
       socket.off("receive");
       socket.off("room-users-count");
+      socket.off("joined-room");
+      socket.off("left-room");
+      socket.off("message-sent");
+      socket.off("error");
     };
-  }, []);
+  }, [messageQueue]);
 
-  // Generate random room ID
   const generateRoomId = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit random number
+    return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
   const handleJoin = () => {
-    if (roomId.trim()) {
-      socket.emit("join-room", roomId);
+    if (roomId.trim() && isConnected) {
+      socket.emit("join-room", roomId.trim());
       setJoined(true);
+      setError(false);
+    } else if (!isConnected) {
+      setError("Not connected to server. Please wait...");
     }
   };
 
   const handleCreateRoom = () => {
-    const newRoomId = generateRoomId();
-    setRoomId(newRoomId);
-    socket.emit("join-room", newRoomId);
-    setJoined(true);
+    if (isConnected) {
+      const newRoomId = generateRoomId();
+      setRoomId(newRoomId);
+      socket.emit("join-room", newRoomId);
+      setJoined(true);
+      setError(false);
+    } else {
+      setError("Not connected to server. Please wait...");
+    }
   };
 
   const leaveRoom = () => {
-    socket.emit("leave-room", roomId);
+    if (isConnected) {
+      socket.emit("leave-room", roomId);
+    }
     setJoined(false);
     setRoomId("");
     setText("");
     setUsersInRoom(0);
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
   };
 
   const handleTextChange = (e) => {
     const newText = e.target.value;
     setText(newText);
 
-    if (!skipEmit.current) {
-      socket.emit("send", { roomId, message: newText });
+    if (!skipEmit.current && joined && roomId) {
+      debouncedSend(roomId, newText);
     }
     skipEmit.current = false;
   };
@@ -71,13 +147,21 @@ export default function App() {
     setRoomId(e.target.value);
 
     const validate = /^\d+$/.test(e.target.value);
-    console.log(validate);
     if (!validate && e.target.value !== "") {
-      setError(true);
+      setError("Room ID can only contain numbers");
     } else {
       setError(false);
     }
   }
+
+  const copyRoomId = async () => {
+    try {
+      await navigator.clipboard.writeText(roomId);
+      console.log("Room ID copied to clipboard");
+    } catch (err) {
+      console.error("Failed to copy room ID:", err);
+    }
+  };
 
   return (
     <div className="container">
@@ -88,19 +172,32 @@ export default function App() {
               <img src={logo} alt="" height={"30px"} />
               <h1 className="title">QuickLink</h1>
             </div>
-            <p className="subtitle">Real Time text sharing Platform</p>
           </div>
-          <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "20px", alignItems: "center", flexWrap: "wrap" }}>
             {joined && (
-              <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
-                <p className="room-title">
-                  RoomId: <span className="room-id">{roomId}</span>
-                </p>
+              <div style={{ display: "flex", gap: "15px", alignItems: "center", flexWrap: "wrap" }}>
+                <div 
+                  className="room-title" 
+                  style={{ cursor: "pointer" }}
+                  onClick={copyRoomId}
+                  title="Click to copy room ID"
+                >
+                  Room: <span className="room-id">{roomId}</span>
+                </div>
+                
                 <div className="users-count">
                   <span className="users-icon">👥</span>
-                  <span className="users-text">{usersInRoom} user{usersInRoom !== 1 ? 's' : ''}</span>
+                  <span className="users-text">
+                    {usersInRoom} user{usersInRoom !== 1 ? 's' : ''}
+                  </span>
                 </div>
-                <button className="leaveBtn" disabled={!joined} onClick={leaveRoom}>Leave</button>
+                <button 
+                  className="leaveBtn" 
+                  disabled={!joined} 
+                  onClick={leaveRoom}
+                >
+                  Leave
+                </button>
               </div>
             )}
           </div>
@@ -117,17 +214,18 @@ export default function App() {
               <div className="input-container">
                 <input
                   className="input"
-                  placeholder="Enter Room ID (optional)"
+                  placeholder="Enter Room ID (6-digit number)"
                   value={roomId}
                   onChange={handleChangeRoomId}
-                  onKeyPress={(e) => e.key === 'Enter' && roomId.trim() && handleJoin()}
+                  onKeyPress={(e) => e.key === 'Enter' && roomId.trim() && !error && isConnected && handleJoin()}
+                  disabled={!isConnected}
                 />
                 <button 
                   className="button" 
                   onClick={handleJoin} 
-                  disabled={error || !roomId.trim()}
+                  disabled={error || !roomId.trim() || !isConnected}
                 >
-                  Join Room
+                  {isConnected ? "Join Room" : "Connecting..."}
                 </button>
               </div>
               
@@ -139,12 +237,37 @@ export default function App() {
                 <button 
                   className="button create-button" 
                   onClick={handleCreateRoom}
+                  disabled={!isConnected}
                 >
-                  Create New Room
+                  {isConnected ? "Create New Room" : "Connecting..."}
                 </button>
               </div>
 
-              {(error) && <p style={{ color: "#fd1a1a", marginLeft: "10px" }}>Room id can only be numbers</p>}
+              {error && (
+                <div style={{ 
+                  color: "#ef4444", 
+                  marginTop: "10px", 
+                  padding: "10px",
+                  backgroundColor: "#fef2f2",
+                  borderRadius: "6px",
+                  border: "1px solid #fecaca"
+                }}>
+                  {typeof error === 'string' ? error : 'An error occurred'}
+                </div>
+              )}
+
+              {messageQueue.length > 0 && (
+                <div style={{
+                  marginTop: "10px",
+                  padding: "10px",
+                  backgroundColor: "#fef3c7",
+                  borderRadius: "6px",
+                  border: "1px solid #fde68a",
+                  fontSize: "14px"
+                }}>
+                  ⏳ {messageQueue.length} message(s) queued. Will send when connected.
+                </div>
+              )}
             </div>
           ) : (
             <div className="editor-card">
@@ -153,7 +276,12 @@ export default function App() {
                 className="textarea"
                 value={text}
                 onChange={handleTextChange}
-                placeholder="Start typing your message here..."
+                placeholder="Start typing your message here... Changes are synced in real-time!"
+                style={{
+                  minHeight: "400px",
+                  resize: "vertical",
+                  border: isConnected ? "2px solid #e5e7eb" : "2px solid #f59e0b"
+                }}
               />
             </div>
           )}
