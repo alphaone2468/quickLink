@@ -2,8 +2,9 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import io from "socket.io-client";
 import './App.css'
 import logo from './photos/logo.png'
+import { facts } from "./Facts";
 
-const socket = io("http://localhost:5000", {
+const socket = io("https://quicklink-9c7g.onrender.com", {
   transports: ['websocket'],
   upgrade: true,
   rememberUpgrade: true,
@@ -24,6 +25,16 @@ export default function App() {
   const [messageQueue, setMessageQueue] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const debounceTimer = useRef(null);
+
+  const [factIndex, setFactIndex] = useState(0);
+    useEffect(() => {
+    const interval = setInterval(() => {
+      setFactIndex((prevIndex) => (prevIndex + 1) % facts.length);
+    }, 10000); // 10 seconds
+
+    return () => clearInterval(interval); // cleanup on unmount
+  }, []);
+
 
   const debouncedSend = useCallback((roomId, message) => {
     if (debounceTimer.current) {
@@ -255,6 +266,9 @@ export default function App() {
                   {typeof error === 'string' ? error : 'An error occurred'}
                 </div>
               )}
+
+
+              <p className="facts">Do You Know : {facts[factIndex]}</p>
 
               {messageQueue.length > 0 && (
                 <div style={{
