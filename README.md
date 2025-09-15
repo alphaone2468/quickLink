@@ -1,4 +1,4 @@
-# QuickLink 🚀
+# QuickLink 
 
 A **real-time data sharing platform** that allows users to join rooms
 and instantly share live text messages with others in the same room.
